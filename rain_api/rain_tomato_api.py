@@ -5,7 +5,7 @@ import time
 import logging
 from urllib.parse import urlencode
 
-from rain_api.book import Book
+from .book import Book
 
 logger = logging.getLogger(__name__)
 
@@ -116,7 +116,7 @@ class RainTomatoAPI:
             logger.warning("search_tabs 不是期望的列表: %r", data)
             return []
         data = next((tab for tab in data if tab.get('tab_type') in (3, '3')), None)
-        if data is []:
+        if data is None:
             logger.warning("没有找到 书籍 的 tab")
             return []
         data = data.get("data")
