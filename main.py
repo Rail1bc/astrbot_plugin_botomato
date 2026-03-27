@@ -27,7 +27,7 @@ class FanqieNovel(Star):
     @filter.command("搜书")
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /搜书 <关键词> [页码|0]"""
-        if self.api_enable() is False:
+        if self.api_enabled() is False:
             event.plain_result("api失效，无法更新、获取新的书籍信息。")
             return
 
