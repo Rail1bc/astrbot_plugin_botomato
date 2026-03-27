@@ -5,7 +5,7 @@ import time
 import logging
 from urllib.parse import urlencode
 
-from book import Book
+from tomato_rain_api.book import Book
 
 logger = logging.getLogger(__name__)
 
