@@ -2,7 +2,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
-from tomato_rain_api.rain_tomato_api import RainTomatoAPI
+from rain_api.rain_tomato_api import RainTomatoAPI
 
 
 @register("astrbot_plugin_fanqie_novel", "Rail1bc", "让ai读小说，我是说让ai读，不是给你读", "0.1.0")

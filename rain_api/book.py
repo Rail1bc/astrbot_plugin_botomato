@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional, Any, Dict
 
-from tomato_rain_api.rain_tomato_api import RainTomatoAPI
+from rain_api.rain_tomato_api import RainTomatoAPI
 
 
 @dataclass
