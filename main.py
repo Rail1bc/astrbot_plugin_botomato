@@ -25,13 +25,13 @@ class FanqieNovel(Star):
             self.api = RainTomatoAPI(apikey=apikey,base_url=base_url,)
 
     @filter.command("测试")
-    async  def test(self, event: AstrMessageEvent):
+    async def test(self, event: AstrMessageEvent):
         event.plain_result("测试成功" + event.message_str)
         event.plain_result(event.message_str.split()[0])
         return
 
     @filter.command("test")
-    async  def test(self, event: AstrMessageEvent):
+    async def test1(self, event: AstrMessageEvent):
         event.plain_result("测试成功" + event.message_str)
         event.plain_result(event.message_str.split()[0])
         return
