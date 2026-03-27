@@ -5,7 +5,7 @@ from astrbot.api import logger
 from tomato_rain_api.rain_tomato_api import RainTomatoAPI
 
 
-@register("偷马头书架", "Rail1bc", "让ai读小说，我是说让ai读，不是给你读", "0.1.0")
+@register("astrbot_plugin_fanqie_novel", "Rail1bc", "让ai读小说，我是说让ai读，不是给你读", "0.1.0")
 class FanqieNovel(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
