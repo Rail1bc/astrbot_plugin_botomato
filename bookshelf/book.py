@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Any, Dict
 
-from .rain_tomato_api import RainTomatoAPI
+from rain_api.rain_tomato_api import RainTomatoAPI
 
 
 @dataclass
@@ -82,20 +82,26 @@ class Book:
         return f"<Book id={self.info.book_id!r} name={self.info.book_name!r} author={self.info.author!r}>"
 
     @classmethod
-    def from_api_dict(cls, data: Dict[str, Any]) -> "Book":
+    def book_from_dict(cls, data: Dict[str, Any]) -> "Book":
         """从 书籍数据 构造 Book """
         info = BookInfo.from_dict(data)
         return cls(info)
 
     @classmethod
-    def book_list_from_api_dict(cls, data_list: Optional[list[dict[str, Any]]]) -> list["Book"]:
+    def book_from_bookid(cls, api: RainTomatoAPI ,bookid: int) -> "Book":
+        info = BookInfo.from_dict(api.book_info(bookid))
+        return cls(info)
+
+    @classmethod
+    def book_list_from_dict(cls, data_list: Optional[list[dict[str, Any]]]) -> list["Book"]:
         """从 书籍数据列表 构造 Book 列表"""
         if not data_list:
             return []
         book_list: list["Book"] = []
         for data in data_list:
-            book_list.append(cls.from_api_dict(data))
+            book_list.append(cls.book_from_dict(data))
         return book_list
+
 
     def book_info_to_str(self) -> str:
         """

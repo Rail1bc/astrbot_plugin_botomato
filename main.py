@@ -2,7 +2,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
-from .rain_api.book import Book
+from bookshelf.book import Book
 from .rain_api.rain_tomato_api import RainTomatoAPI
 
 
@@ -10,25 +10,38 @@ from .rain_api.rain_tomato_api import RainTomatoAPI
 class FanqieNovel(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
+        self.api = None
         self.config = config or {}
-        self.api = RainTomatoAPI(
-            apikey=self.config.get("rain_api_key"),
-            base_url=self.config.get("novel_resource_base"),
-        )
 
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
+        # 初始化 api
+        apikey = self.config.get("rain_apikey")
+        base_url = self.config.get("rain_api_base_url")
+        if not apikey or not base_url:
+            logger.warning("没有 api key 或 书源地址，无法更新、获取新的书籍信息。")
+        else:
+            self.api = RainTomatoAPI(apikey=apikey,base_url=base_url,)
+        
 
     @filter.command("搜书")
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /搜书 <关键词> [页码|0]"""
+        if self.api_enable() is False:
+            event.plain_result("api失效，无法更新、获取新的书籍信息。")
+            return
+
         message_str = event.message_str
         args = message_str.split()
         keywords = args[0]
         page = int(args[1]) if len(args) > 1 else 0
-        list = Book.book_list_from_api_dict(self.api.search(keywords=keywords, page=page))
-        str = "搜索结果：\n----------\n" + "\n----------\n".join([f"{i+1}. {book.book_info_to_str()}" for i, book in enumerate(list)])
+        list = Book.book_list_from_dict(self.api.search(keywords=keywords, page=page))
+        str = ("搜索结果：\n----------\n" +
+               "\n----------\n".join([f"{i+1}. {book.book_info_to_str()}" for i, book in enumerate(list)]))
         yield event.plain_result(str)
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
+
+    def api_enabled(self):
+        return self.api and self.api.enable

@@ -20,8 +20,6 @@ class RainTomatoAPI:
             max_retries: 发生请求异常时的最大重试次数（不包含首次尝试）。
             backoff: 重试回退基数，用于指数退避（sleep = backoff * attempt）。
         """
-        if not apikey or not base_url:
-            raise ValueError("没有apikey或书源地址")
         self.apikey = apikey
         self.base_url = base_url or RainTomatoAPI.DEFAULT_BASE
         self.timeout = timeout
@@ -32,12 +30,20 @@ class RainTomatoAPI:
             "User-Agent": "tomato-rain-client/1.0",
             "Accept": "application/json, text/javascript, */*; q=0.01",
         })
+        self.enable = True # 乐观判断api可用
 
     # 将搜索 / 书籍信息 / 目录 / 章节作为类方法
     def search(self, keywords: str, page: int = 0) -> List:
         params = {'type': 1, 'keywords': keywords, 'page': page}
         search_result = self._get(params)
-        return self._get_search_item(search_result)
+
+        search_result = search_result.get("search_tabs")
+        search_result = next((tab for tab in search_result if tab.get('tab_type') in (3, '3')))
+        search_result = search_result.get("data")
+        book_list = []
+        for cell in search_result:
+            book_list.append(cell.get("book_data")[0])
+        return book_list
 
 
     def book_info(self, bookid: str):
@@ -54,7 +60,7 @@ class RainTomatoAPI:
             params.update(tone)
         return self._get(params).get("data")
 
-    def _get(self, params: dict) -> dict:
+    def _get(self, params: dict) -> dict | None:
         """内部通用 GET 请求构建与执行函数。
 
         行为说明：
@@ -83,41 +89,20 @@ class RainTomatoAPI:
                 resp.raise_for_status()
                 # 响应可能为空或为字符串 'null'，在这些情况下统一返回空 dict
                 if not resp.text or resp.text.strip() == 'null':
-                    return {}
-                try:
-                    # 优先尝试解析为 JSON
-                    return resp.json()
-                except ValueError:
-                    # 如果不是 JSON，则返回原始文本
-                    return {"text": resp.text}
+                    logger.warning("搜索请求未成功: %r", "null")
+                    self.enable = False
+                    return None
+                result = resp.json()
+                if result.get("message") != "SUCCESS":
+                    logger.warning("搜索请求未成功: %r", result)
+                    self.enable = False
+                return resp.json()
             except requests.RequestException as e:
                 # 记录最后一个错误并在下一次重试前等待
                 last_err = e
                 logger.debug('Request failed attempt %s: %s', attempt, e)
                 time.sleep(self.backoff * attempt)
         # 超出重试次数后抛出最后一次捕获的异常
-        raise last_err
-
-
-    def _get_search_item(self, data: dict) -> list:
-        """
-        从搜索结果提取出数据块列表
-        失败返回空列表
-        """
-
-        if not data:
-            logger.warning("搜索失败")
-            return []
-        data = data.get("search_tabs")
-        if not isinstance(data, list):
-            logger.warning("search_tabs 不是期望的列表: %r", data)
-            return []
-        data = next((tab for tab in data if tab.get('tab_type') in (3, '3')), None)
-        if data is None:
-            logger.warning("没有找到 书籍 的 tab")
-            return []
-        data = data.get("data")
-        book_list = []
-        for cell in data:
-            book_list.append(cell.get("book_data")[0])
-        return book_list
+        self.enable = False
+        logger.warning("请求失败，已超过最大重试次数: %s", last_err)
+        return None
