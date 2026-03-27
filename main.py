@@ -28,6 +28,11 @@ class FanqieNovel(Star):
         event.plain_result("测试成功" + event.message_str)
         event.plain_result(event.message_str.split()[0])
 
+    @filter.command("test")
+    async  def test(self, event: AstrMessageEvent):
+        event.plain_result("测试成功" + event.message_str)
+        event.plain_result(event.message_str.split()[0])
+
     @filter.command("搜书")
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /搜书 <关键词> [页码|0]"""
