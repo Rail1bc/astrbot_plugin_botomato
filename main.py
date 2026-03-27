@@ -10,7 +10,7 @@ from .rain_api.rain_tomato_api import RainTomatoAPI
 class FanqieNovel(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
-        self.api = None
+        self.api: RainTomatoAPI | None = None
         self.config = config or {}
 
     async def initialize(self):
@@ -27,7 +27,7 @@ class FanqieNovel(Star):
     @filter.command("搜书")
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /搜书 <关键词> [页码|0]"""
-        if self.api_enabled() is False:
+        if not self.api_enabled():
             event.plain_result("api失效，无法更新、获取新的书籍信息。")
             return
 
@@ -44,4 +44,7 @@ class FanqieNovel(Star):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
 
     def api_enabled(self):
-        return self.api and self.api.enable
+        if self.api is None or self.api.enable is False:
+            return False
+        else:
+            return True
