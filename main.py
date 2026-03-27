@@ -16,8 +16,8 @@ class FanqieNovel(Star):
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
         # 初始化 api
-        apikey = self.config.get("rain_apikey")
-        base_url = self.config.get("rain_api_base_url")
+        apikey = self.config.get("rain_api_key")
+        base_url = self.config.get("novel_resource_base")
         if not apikey or not base_url:
             logger.warning("没有 api key 或 书源地址，无法更新、获取新的书籍信息。")
         else:
