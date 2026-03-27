@@ -2,7 +2,7 @@ from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 
-from bookshelf.book import Book
+from .bookshelf.book import Book
 from .rain_api.rain_tomato_api import RainTomatoAPI
 
 
