@@ -15,7 +15,7 @@ class FanqieNovel(Star):
     def __init__(self, context: Context, config=None):
         super().__init__(context)
         self.config = config or {}
-        self.data_path = Path(get_astrbot_data_path()) / "plugin_data" / self.name
+        self.data_path = (Path(get_astrbot_data_path()) / "plugin_data" / self.name)
         self.bookshelf: BookShelf = BookShelf(str(self.data_path / "bookshelf.db"))
         self.reading_book: Book | None = None
 
