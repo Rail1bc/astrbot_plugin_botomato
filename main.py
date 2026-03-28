@@ -24,6 +24,7 @@ class FanqieNovel(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /<搜书|search_book> <关键词> [页码|0]"""
+        yield event.plain_result("正在搜索小说...")
         yield NovelCommandHandle.novel_search(event)
 
     # -------- 书架操作 ---------
