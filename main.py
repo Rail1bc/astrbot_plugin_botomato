@@ -44,7 +44,7 @@ class FanqieNovel(Star):
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def update_bookshelf(self, event: AstrMessageEvent):
         """更新书架内容 /<更新书架|update_bookshelf> [book_id]"""
-        yield NovelCommandHandle.update_bookshelf(event, self.bookshelf)
+        yield await NovelCommandHandle.update_bookshelf(event, self.bookshelf)
 
     @filter.command("show_bookshelf",None,{"看书架"})
     async def bookshelf_show(self, event: AstrMessageEvent):
