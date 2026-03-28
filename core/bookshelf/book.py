@@ -109,7 +109,7 @@ class Book:
         book_data = await api.book_info(bookid)
         if not book_data:
             raise Exception(f"未找到ID为 {bookid} 的书籍,书籍ID是真实的吗？")
-        return cls(book_data)
+        return cls(BookInfo.from_dict(book_data))
 
     # ----------- 实例方法 -----------
     # ----------- 更新 ------------
