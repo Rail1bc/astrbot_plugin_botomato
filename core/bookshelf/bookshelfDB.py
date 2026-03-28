@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from contextlib import contextmanager
 from typing import List, Dict, Any, Optional
@@ -13,6 +14,9 @@ class BookshelfDB:
         初始化数据库连接，创建表结构并开启必要的 PRAGMA。
         """
         self.db_path = path
+        db_dir = os.path.dirname(self.db_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
         self.conn = sqlite3.connect(self.db_path)
         self.conn.row_factory = sqlite3.Row  # 使查询结果可像字典一样访问
 
