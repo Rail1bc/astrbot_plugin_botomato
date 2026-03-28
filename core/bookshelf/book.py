@@ -97,10 +97,10 @@ class ContentInfo:
         version = data.get("version")
         title = data.get("title")
         content = data.get("content")
-        suffix = "\n 为保证服务质量，免费用户请不要下书！或前往网站赞助后刷新隐藏该提示(赞助用户一天可下载一万章)"
+        suffix = "\\n 为保证服务质量，免费用户请不要下书！或前往网站赞助后刷新隐藏该提示(赞助用户一天可下载一万章)"
         if content.endswith(suffix):
             content = content[:-len(suffix)]
-        content.replace("</p>", "\n")
+        content.replace("<\/p>", "\n")
         return cls(
             item_id=item_id,
             version=version,
