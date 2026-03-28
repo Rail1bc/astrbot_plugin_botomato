@@ -12,12 +12,11 @@ class NovelCommandHandle:
         """根据关键词搜索小说 /搜书 <关键词> [页码|0]"""
         args = event.message_str.split()
         if (args is None) or (len(args) < 2):
-            yield event.plain_result("请提供搜索关键词，格式：\n/搜书 <关键词> [页码|0]")
-            return
+            return event.plain_result("请提供搜索关键词，格式：\n/搜书 <关键词> [页码|0]")
         keywords = args[1]
         page = int(args[2]) if len(args) > 2 and args[2].isdigit() else 0
         result = await NovelCommandHandle._search_book_by_keywords(keywords, page)
-        yield event.plain_result(result)
+        return event.plain_result(result)
 
     @staticmethod
     async def _search_book_by_keywords(keywords: str, page: int = 0) -> str:
@@ -41,11 +40,10 @@ class NovelCommandHandle:
         """将书籍加入到书架 /加书架 <book_id>"""
         args = event.message_str.split()
         if (args is None) or (len(args) < 2):
-            yield event.plain_result("请提供书籍ID，格式：\n/加书架 <book_id>")
-            return
+            return event.plain_result("请提供书籍ID，格式：\n/加书架 <book_id>")
         book_id = args[1]
         result = await NovelCommandHandle._add_book_to_shelf(book_id, bookshelf)
-        yield event.plain_result(result)
+        return event.plain_result(result)
 
     @staticmethod
     async def _add_book_to_shelf(book_id: str, bookshelf: BookShelf) -> str:
@@ -63,10 +61,9 @@ class NovelCommandHandle:
         """删除书籍 /删书 <book_id>"""
         args = event.message_str.split()
         if (args is None) or (len(args) < 2):
-            yield event.plain_result("请提供书籍ID，格式：\n/删书 <book_id>")
-            return
+            return event.plain_result("请提供书籍ID，格式：\n/删书 <book_id>")
         book_id = args[1]
-        yield event.plain_result(bookshelf.DB.delete_book(book_id))
+        return event.plain_result(bookshelf.DB.delete_book(book_id))
 
     # ---------- 更新书架 ------------
     @staticmethod
@@ -75,7 +72,7 @@ class NovelCommandHandle:
         args = event.message_str.split()
         book_id = args[1] if len(args) > 1 else None
         result = await bookshelf.update_book(book_id)
-        yield event.plain_result(result)
+        return event.plain_result(result)
 
     # ---------- 展示书架 -----------
     @staticmethod
@@ -84,7 +81,7 @@ class NovelCommandHandle:
         args = event.message_str.split()
         keyword = args[1] if len(args) > 1 else None
         result = bookshelf.show_book(keyword)
-        yield event.plain_result(result)
+        return event.plain_result(result)
 
 
 

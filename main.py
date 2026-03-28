@@ -25,20 +25,21 @@ class FanqieNovel(Star):
     async def novel_search(self, event: AstrMessageEvent):
         """根据关键词搜索小说 /<搜书|search_book> <关键词> [页码|0]"""
         yield event.plain_result("正在搜索小说...")
-        yield NovelCommandHandle.novel_search(event)
+        yield await NovelCommandHandle.novel_search(event)
 
     # -------- 书架操作 ---------
     @filter.command("add2shelf",None,{"加书架"})
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def add_book2shelf(self, event: AstrMessageEvent):
         """将书籍叫入到书架 /<加书架|add2shelf> <book_id>"""
-        yield NovelCommandHandle.add_book2shelf(event, self.bookshelf)
+        yield await NovelCommandHandle.add_book2shelf(event, self.bookshelf)
 
     @filter.command("rm_book", None, {"删书"})
     @filter.permission_type(filter.PermissionType.ADMIN)
     async def remove_book(self, event: AstrMessageEvent):
         """删除书籍 /<删书|rm_book> <book_id>"""
-        NovelCommandHandle.remove_book(event, self.bookshelf)
+        for item in NovelCommandHandle.remove_book(event, self.bookshelf):
+            yield item
 
     @filter.command("update_bookshelf", None, {"更新书架"})
     @filter.permission_type(filter.PermissionType.ADMIN)
@@ -49,7 +50,7 @@ class FanqieNovel(Star):
     @filter.command("show_bookshelf",None,{"看书架"})
     async def bookshelf_show(self, event: AstrMessageEvent):
         """展示书架内容 /<看书架|show_bookshelf> [关键词]"""
-        yield NovelCommandHandle.bookshelf_show(event, self.bookshelf)
+        yield await NovelCommandHandle.bookshelf_show(event, self.bookshelf)
 
 
     # -------- 读书操作 ---------
