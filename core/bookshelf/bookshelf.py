@@ -43,6 +43,7 @@ class BookShelf:
                 self.DB.sync_book(book)
                 self.DB.sync_chapters(book)
                 self.DB.sync_content(book)
+            result = "\n--------\n".join(result)
             return f"已更新书架全部书籍基础信息、章节列表\n更新情况：\n{result}"
         try:
             book = self.DB.get_book(book_id)
