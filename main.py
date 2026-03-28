@@ -59,7 +59,9 @@ class FanqieNovel(Star):
     @filter.command("正文")
     async def book_chapter(self, event: AstrMessageEvent):
         book_id = event.message_str.split()[1]
-        yield event.plain_result(self.bookshelf.get_book(book_id).content_list[0].content)
+        content = self.bookshelf.get_book(book_id).content_list[0].content
+        logger.debug(content)
+        yield event.plain_result(content)
 
 
     # -------- 读书操作 ---------
