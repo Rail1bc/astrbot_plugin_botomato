@@ -1,8 +1,7 @@
 import os
 import sqlite3
 from contextlib import contextmanager
-from tkinter.tix import Select
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 from .book import Book, ChapterInfo, ContentInfo
 
