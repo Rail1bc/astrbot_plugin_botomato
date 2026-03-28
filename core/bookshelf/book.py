@@ -159,7 +159,7 @@ class Book:
         result.append(await self.update_book_info())
         result.append(await self.update_chapter_list())
         result.append(await self.update_content_list())
-        return result
+        return "".join(result)
 
     async def update_book_info(self) -> str:
         """更新书籍信息"""
