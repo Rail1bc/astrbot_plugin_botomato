@@ -54,18 +54,37 @@ class NovelCommandHandle:
         if isinstance(book_or_msg, str):
             return book_or_msg
         book: Book = book_or_msg
-        bookshelf.add_book(book)
+        await bookshelf.add_book(book)
         return f"已将《{book.info.book_name}》加入书架。"
 
+    # ----------- 删除书籍 ------------
+    @staticmethod
+    def remove_book(event: AstrMessageEvent, bookshelf: BookShelf):
+        """删除书籍 /删书 <book_id>"""
+        args = event.message_str.split()
+        if (args is None) or (len(args) < 2):
+            yield event.plain_result("请提供书籍ID，格式：\n/删书 <book_id>")
+            return
+        book_id = args[1]
+        yield event.plain_result(bookshelf.DB.delete_book(book_id))
+
+    # ---------- 更新书架 ------------
+    @staticmethod
+    async def update_bookshelf(event: AstrMessageEvent, bookshelf: BookShelf):
+        """更新书架内容 /更新书架 [book_id]"""
+        args = event.message_str.split()
+        book_id = args[1] if len(args) > 1 else None
+        result = await bookshelf.update_book(book_id)
+        yield event.plain_result(result)
 
     # ---------- 展示书架 -----------
     @staticmethod
     async def bookshelf_show(event: AstrMessageEvent, bookshelf: BookShelf):
-
-
-
-
-
+        """展示书架内容 /看书架 [关键词]"""
+        args = event.message_str.split()
+        keyword = args[1] if len(args) > 1 else None
+        result = bookshelf.show_book(keyword)
+        yield event.plain_result(result)
 
 
 
@@ -75,10 +94,7 @@ class NovelCommandHandle:
 
     @staticmethod
     async def _search_book_by_id(book_id: str) -> Book | str:
-        api = await RainTomatoAPI.get_instance()
-        if (api is None) or (api.enable is False):
-            return "api失效，无法更新、获取新的书籍信息。"
-        book_data = await api.book_info(book_id)
-        if not book_data:
-            return f"未找到ID为 {book_id} 的书籍,书籍ID是真实的吗？"
-        return Book.book_from_dict(book_data)
+        try:
+            return await Book.book_from_bookid(book_id)
+        except Exception as e:
+            return str(e)

@@ -97,17 +97,17 @@ class BookshelfDB:
         self.conn.commit()
 
     # ---------- 书籍操作 ----------
-    def add_book(self, book: Book) -> str:
-        """
-        添加一本书籍。
-        :param book:
-        :return: book_id
-        """
 
+    def sync_book(self, book: Book) -> None:
+        """
+        同步书籍信息到数据库（插入或更新）。
+        若书籍不存在则插入，若存在则更新所有字段。
+        首次插入时自动创建默认书签（bookmark_id=0）。
+        """
         info = book.info
         with self.transaction():
-            cursor = self.conn.cursor()
-            cursor.execute("""
+            # 插入或替换书籍信息
+            self.conn.execute("""
                 INSERT OR REPLACE INTO books (
                     book_id, book_name, alias_name, original_book_name,
                     author, abstract, word_number, serial_count, read_cnt_text, score
@@ -125,116 +125,96 @@ class BookshelfDB:
                 info.score
             ))
 
-            # 为新添加的书籍创建一个默认书签（bookmark_id=0），初始章节为 1
-            cursor.execute("""
+            # 确保默认书签存在（仅当书籍首次添加时生效）
+            self.conn.execute("""
                 INSERT OR IGNORE INTO bookmarks (book_id, bookmark_id, bookmark_name, chapter_index)
                 VALUES (?, 0, '上次阅读', 1)
-            """, (book.info.book_id,))
-
-        return book.info.book_name
-
-    def update_book(self, book: Book) -> None:
-        """更新书籍信息，传入字段名和值"""
-        info = book.info
-        set_clause = (
-            f"book_id={info.book_id}," +
-            f"book_name={info.book_name}," +
-            f"alias_name={info.alias_name}," +
-            f"original_book_name={info.original_book_name}," +
-            f"author={info.author}," +
-            f"abstract={info.abstract}," +
-            f"word_number={info.word_number}," +
-            f"serial_count={info.serial_count}," +
-            f"read_cnt_text={info.read_cnt_text}," +
-            f"score={info.score}"
-        )
-
-        with self.transaction():
-            self.conn.execute(f"UPDATE books SET {set_clause} WHERE book_id=?", book.info.book_id)
+            """, (info.book_id,))
 
     def get_book(self, book_id: str) -> Book:
-        """获取单本书籍信息，返回字典或 None"""
-        cursor = self.conn.execute("SELECT * FROM books WHERE book_id=?", (book_id,))
+        """获取单本书籍信息，返回 Book 对象"""
+        cursor = self.conn.execute("SELECT * FROM books WHERE book_id = ?", (book_id,))
         row = cursor.fetchone()
+        if row is None:
+            raise ValueError(f"Book not found: {book_id}")
         return Book.book_from_dict(dict(row))
 
-    def get_all_books(self) -> List[str]:
-        """获取所有书籍列表（按添加顺序）"""
-        cursor = self.conn.execute("SELECT book_name FROM books")
-        book_list = []
+    def search_books(self, keyword: str) -> List[Book]:
+        """根据关键词搜索，任意条目包含关键词则算匹配"""
+        query = """
+                SELECT * FROM books
+                WHERE book_name LIKE ?
+                   OR alias_name LIKE ?
+                   OR original_book_name LIKE ?
+                   OR author LIKE ?
+                   OR abstract LIKE ?
+            """
+        pattern = f"%{keyword}%"
+        cursor = self.conn.execute(query, (pattern, pattern, pattern, pattern, pattern))
+        books = []
         for row in cursor:
-            book_list.append(row['book_name'])
-        return book_list
+            books.append(Book.book_from_dict(dict(row)))
+        return books
+
+
+    def get_all_books(self) -> List[Book]:
+        """获取所有书籍列表（按添加顺序），返回每本书的展示字符串"""
+        cursor = self.conn.execute("SELECT * FROM books ORDER BY rowid")
+        books = []
+        for row in cursor:
+            books.append(Book.book_from_dict(dict(row)))
+        return books
 
     def delete_book(self, book_id: str) -> None:
         """删除书籍及其关联的章节、正文、书签（外键级联删除）"""
         with self.transaction():
-            self.conn.execute("DELETE FROM books WHERE book_id=?", (book_id,))
+            self.conn.execute("DELETE FROM books WHERE book_id = ?", (book_id,))
 
     # ---------- 章节操作 ----------
-    def add_chapters(self, book: Book) -> None:
+
+    def sync_chapters(self, book: Book) -> None:
         """
-        批量添加或更新章节。
-        chapters 中每个字典需包含: idx, item_id, version, title, volume_name
+        将 book.chapter_list 同步到数据库。
+        使用 INSERT OR REPLACE 实现插入或更新。
         """
-        cl = book.chapter_list
+        book_id = book.info.book_id
         with self.transaction():
-            for ch in cl:
+            for idx, ch in enumerate(book.chapter_list, start=1):
                 self.conn.execute("""
                     INSERT OR REPLACE INTO chapters (book_id, idx, item_id, version, title, volume_name)
                     VALUES (?, ?, ?, ?, ?, ?)
-                """, (
-                    book.info.book_id,
-                    cl.index(ch) + 1,  # idx 从 1 开始
-                    ch.item_id,
-                    ch.version,
-                    ch.title,
-                    ch.volume_name
-                ))
+                """, (book_id, idx, ch.item_id, ch.version, ch.title, ch.volume_name))
+
+    def get_chapters(self, book_id: str, offset: int = 0, limit: int = 100) -> list[ChapterInfo]:
+        """
+        分页获取某本书的章节列表，按 idx 排序。
+        offset: 从 0 开始的偏移量（对应 idx-1）
+        limit: 每页数量，默认 100
+        """
+        # offset 是行偏移，对应 idx 从 offset+1 开始
+        cursor = self.conn.execute(
+            "SELECT * FROM chapters WHERE book_id = ? ORDER BY idx LIMIT ? OFFSET ?",
+            (book_id, limit, offset)
+        )
+        return [ChapterInfo.from_api_dict(dict(row)) for row in cursor]
+
+    def get_all_chapters(self, book_id: str) -> list[ChapterInfo]:
+        """获取某本书的全部章节（按 idx 排序）"""
+        cursor = self.conn.execute(
+            "SELECT * FROM chapters WHERE book_id = ? ORDER BY idx",
+            (book_id,)
+        )
+        return [ChapterInfo.from_api_dict(dict(row)) for row in cursor]
 
     def get_chapter(self, book_id: str, idx: int) -> ChapterInfo:
-        """根据书籍和章节下标获取章节信息（不含正文）"""
+        """根据书籍 ID 和章节索引获取单个章节信息"""
         cursor = self.conn.execute(
-            "SELECT * FROM chapters WHERE book_id=? AND idx=?", (book_id, idx)
+            "SELECT * FROM chapters WHERE book_id = ? AND idx = ?", (book_id, idx)
         )
         row = cursor.fetchone()
+        if row is None:
+            raise ValueError(f"Chapter not found: book_id={book_id}, idx={idx}")
         return ChapterInfo.from_api_dict(dict(row))
-
-    def get_chapters_list(self, book_id: str, step: int) -> Optional[list[ChapterInfo]]:
-        """
-        获取某本书的章节列表，按 idx 排序
-        获取第(step - 1) * 100 + 1到step * 100 + 1章的章节信息
-        """
-        offset = (step - 1) * 100 + 1
-        cursor = self.conn.execute(
-            "SELECT * FROM chapters WHERE book_id=? "
-            "ORDER BY idx LIMIT 100 OFFSET ?", (book_id, offset)
-        )
-        chapter_list = []
-        for row in cursor:
-            chapter_list.append(ChapterInfo.from_api_dict(dict(row)))
-        return chapter_list
-
-    def update_chapter(self, book: Book) -> None:
-        """更新章节的版本、标题或卷名"""
-        book_id = book.info.book_id
-        item_list = book.chapter_list
-
-        with self.transaction():
-            for ch in item_list:
-                set_clause = (
-                    f"book_id={book_id}," +
-                    f"idx={item_list.index(ch) + 1}," +
-                    f"item_id={ch.item_id}," +
-                    f"version={ch.version}," +
-                    f"title={ch.title}," +
-                    f"volume_name={ch.volume_name}"
-                )
-                idx = item_list.index(ch) + 1
-                self.conn.execute(
-                f"UPDATE chapters SET {set_clause} WHERE book_id=? AND idx=?",
-                    (book_id, idx)
-                )
 
     # ---------- 正文操作 ----------
     def get_content(self, item_id: str) -> Optional[str]:
@@ -305,21 +285,3 @@ class BookshelfDB:
         return [dict(row) for row in cursor.fetchall()]
 
     # ---------- 工作流程辅助方法（可选） ----------
-    def ensure_chapter_content(self, book_id: str, idx: int, fetch_func=None) -> str:
-        """
-        确保指定章节的正文可用。
-        如果正文不存在，则调用 fetch_func(item_id) 获取内容并存储。
-        返回正文内容。
-        """
-        chapter = self.get_chapter(book_id, idx)
-        if not chapter:
-            raise ValueError(f"章节不存在: book_id={book_id}, idx={idx}")
-
-        item_id = chapter['item_id']
-        content = self.get_content(item_id)
-        if content is None:
-            if fetch_func is None:
-                raise RuntimeError("正文不存在且未提供获取函数")
-            content = fetch_func(item_id)
-            self.set_content(item_id, content)
-        return content

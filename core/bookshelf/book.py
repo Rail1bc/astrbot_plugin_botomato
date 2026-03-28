@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Any, Dict
 
-from rain_api.rain_tomato_api import RainTomatoAPI
+from ...rain_api.rain_tomato_api import RainTomatoAPI
 
 
 @dataclass
@@ -84,32 +84,62 @@ class Book:
     def __repr__(self) -> str:
         return f"<Book id={self.info.book_id!r} name={self.info.book_name!r} author={self.info.author!r}>"
 
+    # -------- 工厂方法 --------
+
     @classmethod
     def book_from_dict(cls, data: Dict[str, Any]) -> "Book":
-        """从 书籍数据 构造 Book """
+        """从 json数据 构造 Book """
         info = BookInfo.from_dict(data)
         return cls(info)
 
     @classmethod
-    def book_from_bookid(cls, api: RainTomatoAPI ,bookid: int) -> "Book":
-        info = BookInfo.from_dict(api.book_info(bookid))
-        return cls(info)
-
-    @classmethod
     def book_list_from_dict(cls, data_list: Optional[list[dict[str, Any]]]) -> list["Book"]:
-        """从 书籍数据列表 构造 Book 列表"""
-        if not data_list:
-            return []
+        """从 书籍数据列表 构造 Book列表"""
         book_list: list["Book"] = []
         for data in data_list:
             book_list.append(cls.book_from_dict(data))
         return book_list
 
+    @classmethod
+    async def book_from_bookid(cls, bookid: str) -> "Book":
+        """通过 书籍id 获取 json数据 以构造 Book"""
+        api = await RainTomatoAPI.get_instance()
+        if (api is None) or (api.enable is False):
+            raise Exception("api失效，无法更新、获取新的书籍信息。")
+        book_data = await api.book_info(bookid)
+        if not book_data:
+            raise Exception(f"未找到ID为 {bookid} 的书籍,书籍ID是真实的吗？")
+        return cls(book_data)
+
+    # ----------- 实例方法 -----------
+    # ----------- 更新 ------------
+
+    async def update(self):
+        """更新书籍数据"""
+        await self.update_book_info()
+        await self.update_chapter_list()
+
+    async def update_book_info(self):
+        """更新书籍信息"""
+        api = await RainTomatoAPI.get_instance()
+        data = await api.book_info(self.info.book_id)
+        if data:
+            self.info = BookInfo.from_dict(data)
+
+    async def update_chapter_list(self):
+        """通过 bookid 获取最新章节数据 并更新书籍章节列表"""
+        api = await RainTomatoAPI.get_instance()
+        item_list = await api.toc(self.info.book_id)
+        chapter_list:list[ChapterInfo] = []
+        for data in item_list:
+            chapter_list.append(ChapterInfo.from_api_dict(data))
+        self.chapter_list = chapter_list
+
+    # ---------- 实例方法 ---------------
 
     def book_info_to_str(self) -> str:
         """
-        将书籍信息反序列化为字符串
-        适合在聊天中展示
+        将书籍信息 反序列化为 适合在聊天中展示的字符串
         """
         parts = []
         parts.append(f"《{self.info.book_name}》")
@@ -120,24 +150,6 @@ class Book:
         parts.append(self.info.abstract.strip())
         return "\n* ".join(parts) if parts else repr(self)
 
-    def _get_chapter_context(self, api: RainTomatoAPI, index: int) -> dict:
-        """获取第 n 章正文"""
 
 
-    def update_chapter_list(self, api: RainTomatoAPI):
-        """更新书籍章节列表"""
-        chapter_list:list[ChapterInfo] = []
-        for data in api.toc(self.info.book_id):
-            chapter_list.append(ChapterInfo.from_api_dict(data))
-        self.chapter_list = chapter_list
 
-
-    def update_book_info(self, api: RainTomatoAPI):
-        """更新书籍信息"""
-        data = api.book_info(self.info.book_id)
-        if data:
-            self.info = BookInfo.from_dict(data)
-
-    def update(self, api: RainTomatoAPI):
-        self.update_book_info(api)
-        self.update_chapter_list(api)
