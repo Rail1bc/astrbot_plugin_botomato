@@ -87,6 +87,8 @@ class FanqieNovel(Star):
         else:
             self.enable = not self.enable
         handlers = star_handlers_registry.get_handlers_by_module_name(self.module_path)
+        logger.debug(self.module_path)
+        logger.debug(handlers)
         for h in handlers:
             if h.handler_name != "bookshelf":
                 h.enabled = self.enable
