@@ -201,13 +201,14 @@ class BookshelfDB:
                         VALUES (?, ?, ?, ?, ?, ?)
                     """, data)
 
-    def get_chapters(self, book_id: str, offset: int = 0, limit: int = 100) -> list[ChapterInfo]:
+    def get_chapters(self, book_id: str, offset: int = 1, limit: int = 100) -> list[ChapterInfo]:
         """
         分页获取某本书的章节列表，按 idx 排序。
         offset: 从 0 开始的偏移量（对应 idx-1）
         limit: 每页数量，默认 100
         """
         # offset 是行偏移，对应 idx 从 offset+1 开始
+        offset = offset - 1
         cursor = self.conn.execute(
             "SELECT * FROM chapters WHERE book_id = ? ORDER BY idx LIMIT ? OFFSET ?",
             (book_id, limit, offset)

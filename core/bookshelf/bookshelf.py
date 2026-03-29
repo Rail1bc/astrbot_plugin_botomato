@@ -25,12 +25,12 @@ class BookShelf:
         展示书架存书
         如果存在keyword，则只展示书籍信息包含keyword的书
         """
-        if keyword is None:
-            return "书架存书：\n\n" + "\n\n".join(
+        if not keyword:
+            return "书架藏书：\n\n" + "\n\n".join(
                 [book.book_info_to_str() for book in self.DB.get_all_books()]
             )
         else:
-            return "书架存书匹配结果：\n\n" + "\n\n".join(
+            return "书架藏书匹配结果：\n\n" + "\n\n".join(
                 [book.book_info_to_str() for book in self.DB.search_books(keyword)]
             )
 
@@ -73,5 +73,5 @@ class BookShelf:
     def get_book(self, book_id: str) -> Book:
         return self.DB.get_book(book_id)
 
-    def get_chapters(self, book_id: str, page: int = 0) -> list[ChapterInfo]:
-        return self.DB.get_chapters(book_id, page)
+    def get_chapters(self, book_id: str, page: int = 1, limit: int = 100) -> list[ChapterInfo]:
+        return self.DB.get_chapters(book_id, page, limit)

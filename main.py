@@ -3,12 +3,13 @@ from astrbot.api.star import Context, Star, register
 from astrbot.api import logger
 from astrbot.core.utils.astrbot_path import get_astrbot_data_path
 from pathlib import Path
+
+from .core.handle.bookshelf_handle import BookShelfHandle
 from .core.bookshelf.book import Book
 from .core.bookshelf.bookshelf import BookShelf
-from .core.command_handle.bookshelf_command import BookShelfCommandHandle
+from .core.handle.bookshelf_command import BookShelfCommandHandle
 from .rain_api.rain_tomato_api import RainTomatoAPI
 
-from astrbot.core.star.star_handler import star_handlers_registry
 
 
 
@@ -18,7 +19,7 @@ class FanqieNovel(Star):
         super().__init__(context)
         self.config = config or {}
         self.data_path = (Path(get_astrbot_data_path()) / "plugin_data" / self.name)
-        self.module_path = str((Path(get_astrbot_data_path()) / "plugins" / self.name))
+        self.module_path = "data.plugins.astrbot_plugin_fanqie_novel.main"
         self.bookshelf: BookShelf = BookShelf(str(self.data_path / "bookshelf.db"))
         self.enable: bool = False
         self.reading_book: Book | None = None
@@ -71,7 +72,7 @@ class FanqieNovel(Star):
 
     @filter.command("show_book_toc", None, {"看目录"})
     async def book_toc(self, event: AstrMessageEvent):
-        """展示书籍目录 /<看目录|show_book_toc> <book_id> [页码|0]"""
+        """展示书籍目录 /<看目录|show_book_toc> <book_id> [起始|1] [查询条目数|100]"""
         yield await BookShelfCommandHandle.show_book_toc(event, self.bookshelf)
 
     @filter.command("正文")
@@ -82,12 +83,12 @@ class FanqieNovel(Star):
         yield event.plain_result(content)
 
     def set_enable(self, enable: bool = None):
-        if bool is not None:
+        if enable is not None:
             self.enable = enable
         else:
             self.enable = not self.enable
+        from astrbot.core.star.star_handler import star_handlers_registry
         handlers = star_handlers_registry.get_handlers_by_module_name(self.module_path)
-        logger.debug(self.module_path)
         logger.debug(handlers)
         for h in handlers:
             if h.handler_name != "bookshelf":
@@ -96,6 +97,51 @@ class FanqieNovel(Star):
         return f"已{'启用' if self.enable else '禁用'} 🍅Botomato书架 功能"
 
     # -------- tool_call ---------
+
+    @filter.llm_tool(name="search_novel")
+    async def call_search_novel(self, event: AstrMessageEvent, keywords: str, page: int = 0) :
+        """
+        搜索小说基础信息(包括book_id、书名、简介等)，当需要根据关键词搜索小说时，调用该工具。
+
+        Args:
+            keywords (str): 必填 搜索关键词，支持小说名、简介，不支持作者名
+            page (int): 选填 搜索分页，默认0
+        """
+        await event.plain_result(f"""正在搜索关于"{keywords}"的小说...""")
+        return await BookShelfHandle.novel_search(keywords, page)
+
+    @filter.llm_tool(name="add_novel2shelf")
+    async def call_add_novel2shelf(self, event: AstrMessageEvent, book_id: str):
+        """
+        将小说加入书架，当需要将小说加入书架时，调用该工具。
+
+        Args:
+            book_id (str): 必填 书籍ID
+        """
+        return await BookShelfHandle.add_book2shelf(book_id, self.bookshelf)
+
+    @filter.llm_tool(name="look_bookshelf")
+    async def call_show_bookshelf(self, event: AstrMessageEvent, keywords: str = None):
+        """
+        查看书架藏书(包括book_id、书名、简介等)，当需要查看书架内容时，调用该工具。
+
+        Args:
+            keywords (str): 选填 关键词，支持包括书籍id、书名、作者名的多个字段匹配
+        """
+        return self.bookshelf.show_book(keywords)
+
+    @filter.llm_tool(name="look_novel_toc")
+    async def call_look_novel_toc(self, event: AstrMessageEvent, book_id: str, page: int = 1, limit: int = 100):
+        """
+        查看小说目录，当需要查看书架中小说的目录时，调用该工具。
+
+        Args:
+            book_id (str): 必填 书籍ID
+            page (int): 选填 起始章节，默认1
+            limit (int): 选填 查询量，默认100
+        """
+        return BookShelfHandle.show_book_toc(book_id, self.bookshelf, page, limit)
+
 
 
     async def initialize(self):
