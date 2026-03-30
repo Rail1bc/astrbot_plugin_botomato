@@ -1,6 +1,6 @@
 from ..bookshelf.book import Book
 from ..bookshelf.bookshelf import BookShelf
-from ...rain_api.rain_tomato_api import RainTomatoAPI
+from ...botomato_api.botomato_api import BotomatoAPI
 
 
 class BookShelfHandle:
@@ -8,7 +8,7 @@ class BookShelfHandle:
     @staticmethod
     async def novel_search(keywords: str, page: int = 0) -> str:
         # 调用API搜索书籍
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         try:
             books_data = await api.search(keywords, page)
         except Exception as e:

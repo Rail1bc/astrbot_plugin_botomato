@@ -11,7 +11,7 @@ from .core.handle.bookshelf_handle import BookShelfHandle
 from .core.bookshelf.book import Book
 from .core.bookshelf.bookshelf import BookShelf
 from .core.handle.bookshelf_command import BookShelfCommandHandle
-from .rain_api.rain_tomato_api import RainTomatoAPI
+from .botomato_api.botomato_api import BotomatoAPI
 
 
 
@@ -199,20 +199,16 @@ class FanqieNovel(Star):
     async def initialize(self):
         """可选择实现异步的插件初始化方法，当实例化该插件类之后会自动调用该方法。"""
         # 初始化 api
-        apikey = self.config.get("rain_api_key")
         base_url = self.config.get("novel_resource_base")
-        if not apikey:
-            logger.warning("没有 api key ,无法更新、获取新的书籍信息。")
-        else:
-            api = await RainTomatoAPI.get_instance(apikey,base_url=base_url)
-            logger.debug("api 初始化完成")
-            try:
-                books = await api.search("我的兄弟叫顺溜")
-            except Exception as e:
-                logger.warning(f"拉取测试失败，api不能正常工作:\n{e}")
+        api = await BotomatoAPI.get_instance(base_url=base_url)
+        logger.debug("api 初始化完成")
+        try:
+            await api.search("我的兄弟叫顺溜")
+        except Exception as e:
+            logger.warning(f"拉取测试失败，api不能正常工作:\n{e}")
 
 
 
     async def terminate(self):
         """可选择实现异步的插件销毁方法，当插件被卸载/停用时会调用。"""
-        await RainTomatoAPI.destroy_instance()
+        await BotomatoAPI.destroy_instance()

@@ -3,12 +3,6 @@
     "description": "书源地址",
     "hint": "资源地址",
     "type": "string",
-    "default": ""
-  },
-  "rain_api_key": {
-    "description": "rain api key",
-    "hint": "用于番茄小说搜索",
-    "type": "string",
-    "default": ""
+    "default": "http://botomato.raila.cn"
   }
 }

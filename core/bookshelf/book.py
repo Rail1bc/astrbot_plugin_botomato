@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Optional, Any, Dict, List
 
-from ...rain_api.rain_tomato_api import RainTomatoAPI
+from ...botomato_api.botomato_api import BotomatoAPI
 
 # ------------ 数据类 ------------
 @dataclass
@@ -151,7 +151,7 @@ class Book:
     @classmethod
     async def from_bookid(cls, book_id: str) -> "Book":
         """通过book_id从网络拉取数据构造 Book"""
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         try:
             book_data = await api.book_info(book_id)
         except Exception as e:
@@ -170,7 +170,7 @@ class Book:
 
     async def _update_book_info(self) -> str:
         """更新书籍信息"""
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         try:
             data = await api.book_info(self.info.book_id)
         except Exception as e:
@@ -180,7 +180,7 @@ class Book:
 
     async def _update_chapter_list(self) -> str:
         """通过 bookid 获取最新章节数据 并更新书籍章节列表"""
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         try:
             item_list = await api.toc(self.info.book_id)
         except Exception as e:
@@ -191,7 +191,7 @@ class Book:
 
     async def update_chapter_list(self) -> bool:
         """通过 bookid 获取最新章节数据 并更新书籍章节列表"""
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         try:
             item_list = await api.toc(self.info.book_id)
         except Exception as e:
@@ -201,7 +201,7 @@ class Book:
 
     async def _update_content_list(self) -> str:
         """通过章节列表对比，拉取新增章节以及版本更新章节"""
-        api = await RainTomatoAPI.get_instance()
+        api = await BotomatoAPI.get_instance()
         if len(self.chapter_list) > len(self.content_list):
             idx = len(self.content_list)
             for i in range(idx, len(self.chapter_list)):
