@@ -95,7 +95,7 @@ class BotomatoPlugin(Star):
         Args:
             status (bool): 必填 开关状态，true表示开启工具，false表示关闭工具
         """
-        return self.set_reading_book("on" if status else "off")
+        return self.set_tool_status("on" if status else "off")
 
 
     @filter.llm_tool(name="search_book")
