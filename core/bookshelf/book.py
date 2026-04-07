@@ -157,7 +157,7 @@ class Book:
         content = self.content_list[self.bookmark - 1]
         self.bookmark += 1
         self.save_bookmark()
-        return f"{content.title}:\n{content.content}"
+        return content.to_str()
 
     def set_bookmark(self, bookmark: int) :
         self.bookmark = bookmark
